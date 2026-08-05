@@ -8,17 +8,22 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "test": "node --import ./scripts/test-env-setup.js --test"
+    "migrate:up": "node-pg-migrate up",
+    "migrate:down": "node-pg-migrate down",
+    "test:migrate": "node-pg-migrate up --envPath .env.test",
+    "test": "npm run test:migrate && node --import ./scripts/test-env-setup.js --test"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
+    "pg": "^8.22.0",
     "pino": "^9.2.0",
     "pino-http": "^10.1.0"
   },
   "devDependencies": {
+    "node-pg-migrate": "^9.0.0",
     "nodemon": "^3.1.4",
     "pino-pretty": "^11.2.1"
   }

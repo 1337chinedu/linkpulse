@@ -2,6 +2,7 @@ import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import app from "../src/app.js";
 import { clearLinks } from "../src/lib/linkStore.js";
+import { close as closeDb } from "../src/lib/db.js";
 
 let server;
 let baseUrl;
@@ -14,10 +15,11 @@ before(async () => {
 
 after(async () => {
   await new Promise((resolve) => server.close(resolve));
+  await closeDb();
 });
 
-beforeEach(() => {
-  clearLinks();
+beforeEach(async () => {
+  await clearLinks();
 });
 
 test("GET /health returns ok", async () => {

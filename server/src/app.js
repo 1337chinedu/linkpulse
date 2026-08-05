@@ -24,4 +24,9 @@ app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
 });
 
+app.use((err, req, res, next) => {
+  req.log?.error(err);
+  res.status(500).json({ error: "Internal server error" });
+});
+
 export default app;

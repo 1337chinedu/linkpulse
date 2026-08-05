@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: linkpulse
+      POSTGRES_PASSWORD: linkpulse
+      POSTGRES_DB: linkpulse
+    ports:
+      - "5433:5432"
+    volumes:
+      - linkpulse-postgres:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linkpulse"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+volumes:
+  linkpulse-postgres:
