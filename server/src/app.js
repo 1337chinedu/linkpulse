@@ -10,9 +10,13 @@ import redirectRouter from "./routes/redirect.js";
 
 const app = express();
 
+// Render/Fly.io sit one reverse-proxy hop in front of the app; without this,
+// IP-based rate limiting would see the proxy's IP for every request.
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 app.use(pinoHttp({ logger }));
 
 app.get("/health", (req, res) => {
@@ -29,6 +33,14 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
+  // Client errors raised by trusted middleware (e.g. express.json() body
+  // size/parse limits) carry their own 4xx status — pass it through instead
+  // of masking it as a 500.
+  const status = err.status ?? err.statusCode;
+  if (Number.isInteger(status) && status >= 400 && status < 500) {
+    return res.status(status).json({ error: err.message || "Bad request" });
+  }
+
   req.log?.error(err);
   res.status(500).json({ error: "Internal server error" });
 });

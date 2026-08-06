@@ -17,6 +17,26 @@ test("GET /health returns ok", async () => {
   assert.equal(body.status, "ok");
 });
 
+test("an oversized request body is rejected with 413, not 500", async () => {
+  const token = await createUserAndToken();
+  const res = await fetch(`${ctx.baseUrl}/api/links`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ url: `https://example.com/${"a".repeat(20_000)}` }),
+  });
+  assert.equal(res.status, 413);
+});
+
+test("a malformed JSON body is rejected with 400, not 500", async () => {
+  const token = await createUserAndToken();
+  const res = await fetch(`${ctx.baseUrl}/api/links`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authHeaders(token) },
+    body: "{not-json",
+  });
+  assert.equal(res.status, 400);
+});
+
 test("POST /api/links requires authentication", async () => {
   const res = await fetch(`${ctx.baseUrl}/api/links`, {
     method: "POST",

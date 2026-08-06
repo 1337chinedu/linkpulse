@@ -2,6 +2,9 @@ import { Router } from "express";
 import { createApiKey, listApiKeys, revokeApiKey } from "../lib/apiKeysStore.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { apiLimiter } from "../middleware/rateLimit.js";
+
+const MAX_NAME_LENGTH = 100;
 
 function toPublicKey(record) {
   return {
@@ -16,13 +19,20 @@ function toPublicKey(record) {
 const router = Router();
 
 router.use(authenticate);
+router.use(apiLimiter);
 
 router.post(
   "/",
   asyncHandler(async (req, res) => {
     const { name } = req.body ?? {};
-    if (typeof name !== "string" || name.trim().length === 0) {
-      return res.status(400).json({ error: "name is required" });
+    if (
+      typeof name !== "string" ||
+      name.trim().length === 0 ||
+      name.length > MAX_NAME_LENGTH
+    ) {
+      return res.status(400).json({
+        error: `name is required and must be at most ${MAX_NAME_LENGTH} characters`,
+      });
     }
 
     const record = await createApiKey(req.userId, name.trim());

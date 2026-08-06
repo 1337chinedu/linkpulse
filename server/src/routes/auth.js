@@ -3,11 +3,27 @@ import { hashPassword, verifyPassword, signToken } from "../lib/auth.js";
 import { createUser, findUserByEmail, findUserById } from "../lib/usersStore.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { authLimiter } from "../middleware/rateLimit.js";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
+
+function isValidEmail(value) {
+  return (
+    typeof value === "string" &&
+    value.length <= MAX_EMAIL_LENGTH &&
+    EMAIL_PATTERN.test(value)
+  );
+}
 
 function isValidPassword(value) {
-  return typeof value === "string" && value.length >= 8;
+  return (
+    typeof value === "string" &&
+    value.length >= MIN_PASSWORD_LENGTH &&
+    value.length <= MAX_PASSWORD_LENGTH
+  );
 }
 
 function toPublicUser(user) {
@@ -18,16 +34,17 @@ const router = Router();
 
 router.post(
   "/register",
+  authLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = req.body ?? {};
 
-    if (typeof email !== "string" || !EMAIL_PATTERN.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ error: "a valid email is required" });
     }
     if (!isValidPassword(password)) {
-      return res
-        .status(400)
-        .json({ error: "password must be at least 8 characters" });
+      return res.status(400).json({
+        error: `password must be ${MIN_PASSWORD_LENGTH}-${MAX_PASSWORD_LENGTH} characters`,
+      });
     }
 
     let user;
@@ -47,10 +64,11 @@ router.post(
 
 router.post(
   "/login",
+  authLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = req.body ?? {};
 
-    if (typeof email !== "string" || typeof password !== "string") {
+    if (!isValidEmail(email) || typeof password !== "string") {
       return res.status(400).json({ error: "email and password are required" });
     }
 

@@ -24,7 +24,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | Hosting & deployment | Vercel (frontend), Render/Fly.io (backend) | ⬜ Not started |
 | Cloud & compute | Managed free-tier compute (Render/Fly.io) | ⬜ Not started |
 | CI/CD & version control | GitHub Actions: lint, test, deploy on merge | ⬜ Not started |
-| Security & rate limiting | Helmet, input validation, per-key rate limits | ⬜ Not started |
+| Security & rate limiting | Helmet, input validation, per-key rate limits | ✅ Done |
 | Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ⬜ Not started |
 | Load balancing & scaling | Stateless API design, discussed + tested | ⬜ Not started |
 | Error tracking & logs | Sentry + structured logging (pino) | ⬜ Not started |
@@ -117,6 +117,12 @@ Links are scoped to the caller: you can only list, view stats for, or manage lin
 | GET | `/api/links/:code` | required | Stats for one of your links |
 | GET | `/:code` | — | Redirect to the target URL |
 
+## Security
+
+- **Rate limiting**: `/api/auth/register` and `/api/auth/login` are limited per IP (default 50 requests / 15 min) to blunt brute-force and credential stuffing. `/api/links*` and `/api/keys*` are limited per authenticated user/API key rather than per IP (default 60 requests / min), so a shared office IP or multiple keys don't throttle each other. `GET /:code` redirects are limited per IP but deliberately generous (default 300 / min) since that's the product's main traffic path. All of these are tunable via env vars — see `server/src/middleware/rateLimit.js` for the full list (`AUTH_RATE_LIMIT_MAX`, `API_RATE_LIMIT_MAX`, `REDIRECT_RATE_LIMIT_MAX`, and their `_WINDOW_MS` counterparts).
+- **Input validation**: request bodies are capped at 10kb, with explicit length limits on email (254), password (8–128), URL (2048), short codes (3–32), and API key names (100) — both to reject garbage early and to bound the cost of hashing an attacker-supplied password.
+- **Authorization**: application-level only for now (`WHERE user_id = ...` in every query) — see the note on Postgres Row-Level Security under Auth & permissions in the roadmap table.
+
 ## Project structure
 
 ```
@@ -124,7 +130,7 @@ linkpulse/
 ├── server/            # Express API
 │   ├── src/
 │   │   ├── routes/    # Route handlers
-│   │   ├── middleware/# Auth middleware
+│   │   ├── middleware/# Auth + rate limiting
 │   │   ├── lib/       # Shared utilities (logger, db, auth, stores)
 │   │   ├── app.js     # Express app (importable, used by tests)
 │   │   └── index.js   # Process entrypoint

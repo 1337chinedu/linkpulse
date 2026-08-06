@@ -2,10 +2,15 @@ import { Router } from "express";
 import { createLink, getLinkForUser, listLinksForUser } from "../lib/linkStore.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { authenticate } from "../middleware/authenticate.js";
+import { apiLimiter } from "../middleware/rateLimit.js";
 
 const CODE_PATTERN = /^[A-Za-z0-9_-]{3,32}$/;
+const MAX_URL_LENGTH = 2048;
 
 function isValidUrl(value) {
+  if (typeof value !== "string" || value.length > MAX_URL_LENGTH) {
+    return false;
+  }
   try {
     const parsed = new URL(value);
     return parsed.protocol === "http:" || parsed.protocol === "https:";
@@ -32,13 +37,14 @@ function toPublicLink(req, record) {
 const router = Router();
 
 router.use(authenticate);
+router.use(apiLimiter);
 
 router.post(
   "/links",
   asyncHandler(async (req, res) => {
     const { url, code } = req.body ?? {};
 
-    if (typeof url !== "string" || !isValidUrl(url)) {
+    if (!isValidUrl(url)) {
       return res
         .status(400)
         .json({ error: "url must be a valid http(s) URL" });
