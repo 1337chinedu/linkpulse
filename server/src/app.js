@@ -3,6 +3,8 @@ import helmet from "helmet";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import logger from "./lib/logger.js";
+import authRouter from "./routes/auth.js";
+import apiKeysRouter from "./routes/apiKeys.js";
 import linksRouter from "./routes/links.js";
 import redirectRouter from "./routes/redirect.js";
 
@@ -17,6 +19,8 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", uptime: process.uptime() });
 });
 
+app.use("/api/auth", authRouter);
+app.use("/api/keys", apiKeysRouter);
 app.use("/api", linksRouter);
 app.use("/", redirectRouter);
 

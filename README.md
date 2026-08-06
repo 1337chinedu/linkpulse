@@ -20,7 +20,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | Frontend foundation | React + Vite dashboard | ⬜ Not started |
 | API & backend logic | Node.js + Express REST API | 🚧 In progress |
 | Database & storage | PostgreSQL (Neon), schema + migrations | 🚧 In progress |
-| Auth & permissions | JWT auth, per-user API keys, Postgres Row-Level Security | ⬜ Not started |
+| Auth & permissions | JWT auth, per-user API keys, Postgres Row-Level Security | 🚧 In progress |
 | Hosting & deployment | Vercel (frontend), Render/Fly.io (backend) | ⬜ Not started |
 | Cloud & compute | Managed free-tier compute (Render/Fly.io) | ⬜ Not started |
 | CI/CD & version control | GitHub Actions: lint, test, deploy on merge | ⬜ Not started |
@@ -55,7 +55,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 - **Backend**: Node.js, Express, pino (logging), helmet (security headers)
 - **Database**: PostgreSQL (Neon free tier)
 - **Cache**: Redis (Upstash free tier)
-- **Auth**: JWT + bcrypt
+- **Auth**: JWT + scrypt (Node's built-in `crypto.scrypt`, no native deps)
 - **Deployment**: Vercel (frontend), Render or Fly.io (backend)
 - **CI/CD**: GitHub Actions
 - **Monitoring**: Sentry
@@ -98,6 +98,25 @@ Running `npm test` automatically applies migrations to `linkpulse_test` first (v
 ### Frontend
 _Coming soon — not scaffolded yet._
 
+## API
+
+All `/api/links*` routes require authentication: either a JWT (`Authorization: Bearer <token>` from register/login) or an API key (`Authorization: Bearer lp_...`). `GET /:code` (the redirect itself) is intentionally public — visitors clicking a short link never need to authenticate.
+
+Links are scoped to the caller: you can only list, view stats for, or manage links you created. Authorization is enforced with `WHERE user_id = ...` in every query — there's no Postgres Row-Level Security yet, so it's application-level only for now (see the roadmap table above).
+
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | — | Create a user, returns a JWT |
+| POST | `/api/auth/login` | — | Returns a JWT |
+| GET | `/api/auth/me` | required | Current user |
+| POST | `/api/keys` | required | Create an API key (the raw key is only ever returned once) |
+| GET | `/api/keys` | required | List your keys (no raw secrets) |
+| DELETE | `/api/keys/:id` | required | Revoke a key |
+| POST | `/api/links` | required | Shorten a URL |
+| GET | `/api/links` | required | List your links |
+| GET | `/api/links/:code` | required | Stats for one of your links |
+| GET | `/:code` | — | Redirect to the target URL |
+
 ## Project structure
 
 ```
@@ -105,10 +124,12 @@ linkpulse/
 ├── server/            # Express API
 │   ├── src/
 │   │   ├── routes/    # Route handlers
-│   │   ├── lib/       # Shared utilities (logger, db, redis clients)
+│   │   ├── middleware/# Auth middleware
+│   │   ├── lib/       # Shared utilities (logger, db, auth, stores)
 │   │   ├── app.js     # Express app (importable, used by tests)
 │   │   └── index.js   # Process entrypoint
 │   ├── migrations/    # node-pg-migrate SQL migrations
+│   ├── scripts/       # Test/dev tooling (not part of the app itself)
 │   ├── test/          # node --test suite
 │   └── package.json
 ├── client/            # React dashboard (coming soon)
