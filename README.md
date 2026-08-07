@@ -22,7 +22,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | Database & storage | PostgreSQL (Neon), schema + migrations | 🚧 In progress |
 | Auth & permissions | JWT auth, per-user API keys, Postgres Row-Level Security | 🚧 In progress |
 | Hosting & deployment | Vercel (frontend), Render/Fly.io (backend) | 🚧 In progress |
-| Cloud & compute | Managed free-tier compute (Render/Fly.io) | ⬜ Not started |
+| Cloud & compute | Managed free-tier compute (Render/Fly.io) | 🚧 In progress |
 | CI/CD & version control | GitHub Actions: lint, test, deploy on merge | ⬜ Not started |
 | Security & rate limiting | Helmet, input validation, per-key rate limits | ✅ Done |
 | Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ⬜ Not started |
@@ -96,6 +96,8 @@ Running `npm test` automatically applies migrations to `linkpulse_test` first (v
 4. Run `npm run migrate:up` once against that `DATABASE_URL` to create the schema (Neon requires SSL, which is the default — don't set `PGSSL=false`).
 
 ### Deploying the backend (Render)
+**Live**: https://linkpulse-api-ptat.onrender.com
+
 The repo includes a [render.yaml](render.yaml) blueprint, so Render reads the service config from git instead of you clicking through dashboard settings by hand.
 
 1. Push to GitHub (already done if you're reading this from the repo).
@@ -108,6 +110,8 @@ The repo includes a [render.yaml](render.yaml) blueprint, so Render reads the se
 6. Once live, check `https://<your-service>.onrender.com/health`.
 
 The free plan spins the service down after 15 minutes of inactivity — the first request after idle will be slow (cold start) while it spins back up. That's a known free-tier tradeoff, not a bug.
+
+**Gotcha we hit**: `NODE_ENV=production` makes `npm install` skip `devDependencies`. Anything the build step actually needs at deploy time (like `node-pg-migrate`, invoked by `migrate:up`) has to live in `dependencies`, even though it feels like a dev-only tool.
 
 ### Frontend
 _Coming soon — not scaffolded yet._
