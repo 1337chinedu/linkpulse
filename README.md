@@ -21,7 +21,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | API & backend logic | Node.js + Express REST API | 🚧 In progress |
 | Database & storage | PostgreSQL (Neon), schema + migrations | 🚧 In progress |
 | Auth & permissions | JWT auth, per-user API keys, Postgres Row-Level Security | 🚧 In progress |
-| Hosting & deployment | Vercel (frontend), Render/Fly.io (backend) | ⬜ Not started |
+| Hosting & deployment | Vercel (frontend), Render/Fly.io (backend) | 🚧 In progress |
 | Cloud & compute | Managed free-tier compute (Render/Fly.io) | ⬜ Not started |
 | CI/CD & version control | GitHub Actions: lint, test, deploy on merge | ⬜ Not started |
 | Security & rate limiting | Helmet, input validation, per-key rate limits | ✅ Done |
@@ -95,6 +95,20 @@ Running `npm test` automatically applies migrations to `linkpulse_test` first (v
 3. Set it as `DATABASE_URL` wherever the server runs in production (e.g. Render/Fly.io environment variables) — do **not** put it in a committed `.env` file.
 4. Run `npm run migrate:up` once against that `DATABASE_URL` to create the schema (Neon requires SSL, which is the default — don't set `PGSSL=false`).
 
+### Deploying the backend (Render)
+The repo includes a [render.yaml](render.yaml) blueprint, so Render reads the service config from git instead of you clicking through dashboard settings by hand.
+
+1. Push to GitHub (already done if you're reading this from the repo).
+2. In the [Render dashboard](https://dashboard.render.com), choose **New > Blueprint** and connect this repo.
+3. Render reads `render.yaml` and proposes a `linkpulse-api` web service (free plan, rooted at `server/`). Confirm it.
+4. When prompted for environment variables, set:
+   - `DATABASE_URL` — your Neon connection string (same value as in your local `server/.env`)
+   - `JWT_SECRET` — a random secret (same value as local, or generate a fresh one — either works, it just needs to be stable across restarts so existing tokens stay valid)
+5. Deploy. Render runs `npm install && npm run migrate:up` as the build step, so the schema is created/updated automatically on every deploy, then starts the service with `npm start`.
+6. Once live, check `https://<your-service>.onrender.com/health`.
+
+The free plan spins the service down after 15 minutes of inactivity — the first request after idle will be slow (cold start) while it spins back up. That's a known free-tier tradeoff, not a bug.
+
 ### Frontend
 _Coming soon — not scaffolded yet._
 
@@ -122,6 +136,7 @@ Links are scoped to the caller: you can only list, view stats for, or manage lin
 - **Rate limiting**: `/api/auth/register` and `/api/auth/login` are limited per IP (default 50 requests / 15 min) to blunt brute-force and credential stuffing. `/api/links*` and `/api/keys*` are limited per authenticated user/API key rather than per IP (default 60 requests / min), so a shared office IP or multiple keys don't throttle each other. `GET /:code` redirects are limited per IP but deliberately generous (default 300 / min) since that's the product's main traffic path. All of these are tunable via env vars — see `server/src/middleware/rateLimit.js` for the full list (`AUTH_RATE_LIMIT_MAX`, `API_RATE_LIMIT_MAX`, `REDIRECT_RATE_LIMIT_MAX`, and their `_WINDOW_MS` counterparts).
 - **Input validation**: request bodies are capped at 10kb, with explicit length limits on email (254), password (8–128), URL (2048), short codes (3–32), and API key names (100) — both to reject garbage early and to bound the cost of hashing an attacker-supplied password.
 - **Authorization**: application-level only for now (`WHERE user_id = ...` in every query) — see the note on Postgres Row-Level Security under Auth & permissions in the roadmap table.
+- **CORS**: currently open (`Access-Control-Allow-Origin: *`) since there's no frontend yet to scope it to. Once the dashboard exists, this should be locked down to that origin.
 
 ## Project structure
 
@@ -141,6 +156,7 @@ linkpulse/
 ├── client/            # React dashboard (coming soon)
 ├── docker/            # Local Postgres init scripts
 ├── docker-compose.yml # Local Postgres (dev + test databases)
+├── render.yaml        # Render deployment blueprint (backend)
 └── .github/
     └── workflows/     # CI/CD pipelines
 ```
