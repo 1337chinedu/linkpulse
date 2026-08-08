@@ -14,8 +14,27 @@ const app = express();
 // IP-based rate limiting would see the proxy's IP for every request.
 app.set("trust proxy", 1);
 
+// GET /:code (the redirect) is a top-level browser navigation, not a fetch/
+// XHR, so it's unaffected by CORS regardless of origin — this only gates
+// programmatic calls to /api/* from the dashboard's own JS.
+const allowedOrigins = (process.env.CORS_ORIGINS ?? "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin(origin, callback) {
+      // No Origin header means a non-browser client (curl, server-to-server,
+      // same-origin) — nothing to restrict.
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      callback(Object.assign(new Error("Origin not allowed"), { status: 403 }));
+    },
+  }),
+);
 app.use(express.json({ limit: "10kb" }));
 app.use(pinoHttp({ logger }));
 

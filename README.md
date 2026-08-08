@@ -122,7 +122,12 @@ npm run dev
 ```
 The dashboard runs at `http://localhost:5173`. It expects a running backend (see above) — register an account, create a link, and it shows up in the table with a live click count.
 
-Not yet deployed to Vercel — that's the remaining piece of the Hosting & deployment layer.
+### Deploying the frontend (Vercel)
+1. In the [Vercel dashboard](https://vercel.com/new), import this GitHub repo.
+2. Vercel auto-detects the Vite framework preset. Set **Root Directory** to `client` (this is a monorepo — the frontend isn't at the repo root).
+3. Add an environment variable: `VITE_API_URL` = `https://linkpulse-api-ptat.onrender.com` (the live backend).
+4. Deploy. [client/vercel.json](client/vercel.json) adds a rewrite so client-side routes like `/dashboard` don't 404 on a direct visit or refresh — Vercel's static hosting otherwise only knows about `/index.html`.
+5. Once live, update the backend's `CORS_ORIGINS` env var on Render to include the new `*.vercel.app` URL (see [Security](#security) below), so the deployed frontend can actually call the API.
 
 ## API
 
@@ -148,7 +153,7 @@ Links are scoped to the caller: you can only list, view stats for, or manage lin
 - **Rate limiting**: `/api/auth/register` and `/api/auth/login` are limited per IP (default 50 requests / 15 min) to blunt brute-force and credential stuffing. `/api/links*` and `/api/keys*` are limited per authenticated user/API key rather than per IP (default 60 requests / min), so a shared office IP or multiple keys don't throttle each other. `GET /:code` redirects are limited per IP but deliberately generous (default 300 / min) since that's the product's main traffic path. All of these are tunable via env vars — see `server/src/middleware/rateLimit.js` for the full list (`AUTH_RATE_LIMIT_MAX`, `API_RATE_LIMIT_MAX`, `REDIRECT_RATE_LIMIT_MAX`, and their `_WINDOW_MS` counterparts).
 - **Input validation**: request bodies are capped at 10kb, with explicit length limits on email (254), password (8–128), URL (2048), short codes (3–32), and API key names (100) — both to reject garbage early and to bound the cost of hashing an attacker-supplied password.
 - **Authorization**: application-level only for now (`WHERE user_id = ...` in every query) — see the note on Postgres Row-Level Security under Auth & permissions in the roadmap table.
-- **CORS**: currently open (`Access-Control-Allow-Origin: *`). The dashboard now exists but isn't deployed yet, so there's no fixed production origin to scope it to — once it's on Vercel, this should be locked down to that origin.
+- **CORS**: `/api/*` only accepts browser requests from origins listed in `CORS_ORIGINS` (comma-separated), defaulting to just the Vite dev server (`http://localhost:5173`). Set it in production to your Vercel URL(s). Requests with no `Origin` header (curl, server-to-server, the `GET /:code` redirect itself) are unaffected — CORS only ever gates browser JS calling the API cross-origin.
 
 ## Project structure
 
