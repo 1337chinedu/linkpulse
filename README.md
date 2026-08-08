@@ -17,12 +17,12 @@ This is a learning project, built layer by layer to deliberately practice the pi
 
 | Layer | What's implemented | Status |
 |---|---|---|
-| Frontend foundation | React + Vite dashboard | 🚧 In progress |
+| Frontend foundation | React + Vite dashboard | ✅ Done |
 | API & backend logic | Node.js + Express REST API | 🚧 In progress |
 | Database & storage | PostgreSQL (Neon), schema + migrations | 🚧 In progress |
 | Auth & permissions | JWT auth, per-user API keys, Postgres Row-Level Security | 🚧 In progress |
-| Hosting & deployment | Vercel (frontend), Render/Fly.io (backend) | 🚧 In progress |
-| Cloud & compute | Managed free-tier compute (Render/Fly.io) | 🚧 In progress |
+| Hosting & deployment | Vercel (frontend), Render/Fly.io (backend) | ✅ Done |
+| Cloud & compute | Managed free-tier compute (Render/Fly.io) | ✅ Done |
 | CI/CD & version control | GitHub Actions: lint, test, deploy on merge | ⬜ Not started |
 | Security & rate limiting | Helmet, input validation, per-key rate limits | ✅ Done |
 | Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ⬜ Not started |
@@ -123,6 +123,8 @@ npm run dev
 The dashboard runs at `http://localhost:5173`. It expects a running backend (see above) — register an account, create a link, and it shows up in the table with a live click count.
 
 ### Deploying the frontend (Vercel)
+**Live**: https://linkpulse-mocha.vercel.app
+
 1. In the [Vercel dashboard](https://vercel.com/new), import this GitHub repo.
 2. Vercel auto-detects the Vite framework preset. Set **Root Directory** to `client` (this is a monorepo — the frontend isn't at the repo root).
 3. Add an environment variable: `VITE_API_URL` = `https://linkpulse-api-ptat.onrender.com` (the live backend).
