@@ -27,7 +27,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | Security & rate limiting | Helmet, input validation, per-key rate limits | ✅ Done |
 | Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ⬜ Not started |
 | Load balancing & scaling | Stateless API design, discussed + tested | ⬜ Not started |
-| Error tracking & logs | Sentry + structured logging (pino) | ⬜ Not started |
+| Error tracking & logs | Sentry + structured logging (pino) | 🚧 In progress |
 | Availability & recovery | Health checks, DB backups, graceful shutdown | ⬜ Not started |
 
 ## Architecture (target)
@@ -95,6 +95,13 @@ Running `npm test` automatically applies migrations to `linkpulse_test` first (v
 3. Set it as `DATABASE_URL` wherever the server runs in production (e.g. Render/Fly.io environment variables) — do **not** put it in a committed `.env` file.
 4. Run `npm run migrate:up` once against that `DATABASE_URL` to create the schema (Neon requires SSL, which is the default — don't set `PGSSL=false`).
 
+### Error tracking (Sentry)
+1. Create a free project at [sentry.io](https://sentry.io/signup/) (platform: Node.js/Express).
+2. Copy the DSN it gives you and set `SENTRY_DSN` in `server/.env` (local) and as an env var wherever the server runs in production.
+3. Leave it unset to disable Sentry entirely — `Sentry.init({ dsn: undefined })` is a documented no-op, not an error, so this is safe for local dev and CI.
+
+Sentry is initialized in [src/instrument.js](server/src/instrument.js), loaded via `node --import` before any other module (required for Sentry's auto-instrumentation to work) — see the `dev`/`start` scripts in `package.json`. Only genuine server errors are reported: `Sentry.setupExpressErrorHandler` only captures errors with no status code or status ≥ 500 by default, so expected 4xx responses (validation errors, rate limits, CORS rejections) don't spam the dashboard. Uncaught exceptions and unhandled promise rejections anywhere in the process are also captured automatically — that's a built-in default integration, not something we wired up by hand.
+
 ### Deploying the backend (Render)
 **Live**: https://linkpulse-api-ptat.onrender.com
 
@@ -106,6 +113,8 @@ The repo includes a [render.yaml](render.yaml) blueprint, so Render reads the se
 4. When prompted for environment variables, set:
    - `DATABASE_URL` — your Neon connection string (same value as in your local `server/.env`)
    - `JWT_SECRET` — a random secret (same value as local, or generate a fresh one — either works, it just needs to be stable across restarts so existing tokens stay valid)
+   - `CORS_ORIGINS` — your deployed frontend's origin (e.g. the Vercel URL below)
+   - `SENTRY_DSN` — from the [Error tracking](#error-tracking-sentry) section above (optional — leave blank to skip Sentry)
 5. Deploy. Render runs `npm install && npm run migrate:up` as the build step, so the schema is created/updated automatically on every deploy, then starts the service with `npm start`.
 6. Once live, check `https://<your-service>.onrender.com/health`.
 

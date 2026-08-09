@@ -2,6 +2,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import * as Sentry from "@sentry/node";
 import logger from "./lib/logger.js";
 import authRouter from "./routes/auth.js";
 import apiKeysRouter from "./routes/apiKeys.js";
@@ -50,6 +51,11 @@ app.use("/", redirectRouter);
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
 });
+
+// Reports unhandled errors to Sentry, then forwards to our own handler
+// below. Only errors without a status (or status >= 500) get reported —
+// expected 4xx client errors are skipped by default.
+Sentry.setupExpressErrorHandler(app);
 
 app.use((err, req, res, next) => {
   // Client errors raised by trusted middleware (e.g. express.json() body
