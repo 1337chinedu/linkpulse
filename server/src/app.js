@@ -43,10 +43,6 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", uptime: process.uptime() });
 });
 
-app.get("/debug-sentry", () => {
-  throw new Error("Sentry production verification error — temporary, remove before committing");
-});
-
 app.use("/api/auth", authRouter);
 app.use("/api/keys", apiKeysRouter);
 app.use("/api", linksRouter);

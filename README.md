@@ -27,7 +27,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | Security & rate limiting | Helmet, input validation, per-key rate limits | ✅ Done |
 | Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ⬜ Not started |
 | Load balancing & scaling | Stateless API design, discussed + tested | ⬜ Not started |
-| Error tracking & logs | Sentry + structured logging (pino) | 🚧 In progress |
+| Error tracking & logs | Sentry + structured logging (pino) | ✅ Done |
 | Availability & recovery | Health checks, DB backups, graceful shutdown | ⬜ Not started |
 
 ## Architecture (target)
