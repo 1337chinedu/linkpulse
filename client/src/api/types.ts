@@ -20,12 +20,10 @@ export interface Link {
 
 export interface ApiKey {
   id: string;
-  name: string;
-  keyPrefix: string;
   createdAt: string;
-  lastUsedAt?: string;
+  secret?: string;
 }
 
 export interface NewApiKey extends ApiKey {
-  key: string;
+  secret: string;
 }

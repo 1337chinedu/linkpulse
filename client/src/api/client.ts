@@ -68,11 +68,11 @@ export function listApiKeys(token: string) {
   return request<{ keys: ApiKey[] }>("/api/keys", { token });
 }
 
-export function createApiKey(token: string, name: string) {
+export function createApiKey(token: string) {
   return request<NewApiKey>("/api/keys", {
     method: "POST",
     token,
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({}),
   });
 }
 
