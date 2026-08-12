@@ -25,7 +25,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | Cloud & compute | Managed free-tier compute (Render/Fly.io) | ✅ Done |
 | CI/CD & version control | GitHub Actions: lint, test, deploy on merge | ✅ Done |
 | Security & rate limiting | Helmet, input validation, per-key rate limits | ✅ Done |
-| Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ⬜ Not started |
+| Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ✅ Done |
 | Load balancing & scaling | Stateless API design, discussed + tested | ⬜ Not started |
 | Error tracking & logs | Sentry + structured logging (pino) | ✅ Done |
 | Availability & recovery | Health checks, DB backups, graceful shutdown | ⬜ Not started |
@@ -102,6 +102,23 @@ Running `npm test` automatically applies migrations to `linkpulse_test` first (v
 
 Sentry is initialized in [src/instrument.js](server/src/instrument.js), loaded via `node --import` before any other module (required for Sentry's auto-instrumentation to work) — see the `dev`/`start` scripts in `package.json`. Only genuine server errors are reported: `Sentry.setupExpressErrorHandler` only captures errors with no status code or status ≥ 500 by default, so expected 4xx responses (validation errors, rate limits, CORS rejections) don't spam the dashboard. Uncaught exceptions and unhandled promise rejections anywhere in the process are also captured automatically — that's a built-in default integration, not something we wired up by hand.
 
+### Caching (Upstash Redis)
+1. Create a free Redis database at [upstash.com](https://upstash.com).
+2. Copy the **REST API** credentials (UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN) from the dashboard.
+3. Set them in `server/.env`:
+   ```
+   UPSTASH_REDIS_REST_URL=<your-url>
+   UPSTASH_REDIS_REST_TOKEN=<your-token>
+   ```
+4. Leave both unset to disable caching — the app gracefully degrades and uses the database for every request (slower but works fine).
+
+**Caching strategy:**
+- **Link lookups** (`GET /:code`): Cache full link records with 24h TTL. Cache hits avoid DB queries → instant redirects.
+- **Click recording**: Increment click count in Redis (fast), then asynchronously update the database. This trades slightly stale DB state for sub-millisecond redirect responses.
+- **Cache invalidation**: Cleared on link creation/update, so changes are visible immediately.
+
+The cache layer is entirely optional and transparent — if Redis is unavailable or unset, all requests fall back to the database. Tests pass both with and without caching enabled.
+
 ### Deploying the backend (Render)
 **Live**: https://linkpulse-api-ptat.onrender.com
 
@@ -115,6 +132,7 @@ The repo includes a [render.yaml](render.yaml) blueprint, so Render reads the se
    - `JWT_SECRET` — a random secret (same value as local, or generate a fresh one — either works, it just needs to be stable across restarts so existing tokens stay valid)
    - `CORS_ORIGINS` — your deployed frontend's origin (e.g. the Vercel URL below)
    - `SENTRY_DSN` — from the [Error tracking](#error-tracking-sentry) section above (optional — leave blank to skip Sentry)
+   - `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` — from the [Caching](#caching-upstash-redis) section above (optional — leave blank to skip Redis caching)
 5. Deploy. Render runs `npm install && npm run migrate:up` as the build step, so the schema is created/updated automatically on every deploy, then starts the service with `npm start`.
 6. Once live, check `https://<your-service>.onrender.com/health`.
 
