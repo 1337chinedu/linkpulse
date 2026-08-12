@@ -121,15 +121,20 @@ export function SettingsPage() {
                       <div className="api-key-created">
                         Created {new Date(key.createdAt).toLocaleDateString()}
                       </div>
-                      <div className="api-key-secret">
-                        <code>{key.secret.substring(0, 20)}...</code>
-                        <button
-                          className="link-button"
-                          onClick={() => handleCopyKey(key.secret)}
-                        >
-                          {copiedKey === key.secret ? "Copied!" : "Copy"}
-                        </button>
-                      </div>
+                      {key.secret && (() => {
+                        const secret = key.secret;
+                        return (
+                          <div className="api-key-secret">
+                            <code>{secret.substring(0, 20)}...</code>
+                            <button
+                              className="link-button"
+                              onClick={() => handleCopyKey(secret)}
+                            >
+                              {copiedKey === secret ? "Copied!" : "Copy"}
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <button
                       className="link-button danger"

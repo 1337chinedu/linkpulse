@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Navigation } from "../components/Navigation";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/client";
