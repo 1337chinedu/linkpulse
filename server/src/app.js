@@ -4,6 +4,8 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import * as Sentry from "@sentry/node";
 import logger from "./lib/logger.js";
+import { query } from "./lib/db.js";
+import { redis } from "./lib/cache.js";
 import authRouter from "./routes/auth.js";
 import apiKeysRouter from "./routes/apiKeys.js";
 import linksRouter from "./routes/links.js";
@@ -39,8 +41,49 @@ app.use(
 app.use(express.json({ limit: "10kb" }));
 app.use(pinoHttp({ logger }));
 
+// Liveness probe: used by orchestrators to detect if the process is alive
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", uptime: process.uptime() });
+});
+
+// Readiness probe: checks if the service is ready to serve traffic
+app.get("/ready", async (req, res) => {
+  const checks = {};
+
+  // Check database connectivity (non-blocking timeout)
+  try {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("DB timeout")), 1000),
+    );
+    await Promise.race([query("SELECT 1"), timeoutPromise]);
+    checks.database = "ok";
+  } catch (err) {
+    checks.database = "error: " + err.message;
+  }
+
+  // Check Redis connectivity (if enabled)
+  try {
+    if (redis) {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Redis timeout")), 1000),
+      );
+      await Promise.race([redis.ping(), timeoutPromise]);
+      checks.redis = "ok";
+    } else {
+      checks.redis = "disabled";
+    }
+  } catch (err) {
+    checks.redis = "error: " + err.message;
+  }
+
+  const ready =
+    checks.database === "ok" && (checks.redis === "ok" || checks.redis === "disabled");
+  const statusCode = ready ? 200 : 503;
+
+  res.status(statusCode).json({
+    status: ready ? "ready" : "not_ready",
+    ...checks,
+  });
 });
 
 app.use("/api/auth", authRouter);
