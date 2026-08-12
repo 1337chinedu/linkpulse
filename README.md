@@ -23,7 +23,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | Auth & permissions | JWT auth, per-user API keys, Postgres Row-Level Security | 🚧 In progress |
 | Hosting & deployment | Vercel (frontend), Render/Fly.io (backend) | ✅ Done |
 | Cloud & compute | Managed free-tier compute (Render/Fly.io) | ✅ Done |
-| CI/CD & version control | GitHub Actions: lint, test, deploy on merge | ⬜ Not started |
+| CI/CD & version control | GitHub Actions: lint, test, deploy on merge | ✅ Done |
 | Security & rate limiting | Helmet, input validation, per-key rate limits | ✅ Done |
 | Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ⬜ Not started |
 | Load balancing & scaling | Stateless API design, discussed + tested | ⬜ Not started |
@@ -149,6 +149,29 @@ The dashboard expects a running backend (see above) — register an account, cre
 3. Add an environment variable: `VITE_API_URL` = `https://linkpulse-api-ptat.onrender.com` (the live backend).
 4. Deploy. [client/vercel.json](client/vercel.json) adds a rewrite so client-side routes like `/dashboard` don't 404 on a direct visit or refresh — Vercel's static hosting otherwise only knows about `/index.html`.
 5. Once live, update the backend's `CORS_ORIGINS` env var on Render to include the new `*.vercel.app` URL (see [Security](#security) below), so the deployed frontend can actually call the API.
+
+### CI/CD (GitHub Actions)
+
+Every push to `main` and all PRs trigger automated checks:
+
+**Backend**: `npm test` with a live Postgres test database
+- Runs migrations on `linkpulse_test`
+- Executes full test suite (36 tests covering auth, rate limits, CORS, links, error handling)
+- All tests must pass before merge
+
+**Frontend**: `npm run lint && npm run build`
+- Type-checks with TypeScript
+- Lints with oxlint
+- Builds the production bundle
+- Must succeed before merge
+
+**Auto-deploy**: Once merged to `main`:
+- Render auto-deploys the backend (via [render.yaml](render.yaml) webhook)
+- Vercel auto-deploys the frontend (via GitHub integration)
+
+Both deployments are independent of CI status — they proceed on any push to `main`, so fix CI issues via a follow-up commit if needed.
+
+**Recommended**: Add [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-pull-requests/managing-rulesets/about-rulesets) in your GitHub repo settings to require CI to pass and disable force-push to `main`.
 
 ## API
 
