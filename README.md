@@ -28,7 +28,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 | Caching & CDN | Redis (Upstash) for hot redirects, edge caching | ✅ Done |
 | Load balancing & scaling | Stateless API design, discussed + tested | ⬜ Not started |
 | Error tracking & logs | Sentry + structured logging (pino) | ✅ Done |
-| Availability & recovery | Health checks, DB backups, graceful shutdown | ⬜ Not started |
+| Availability & recovery | Health checks, DB backups, graceful shutdown | ✅ Done |
 
 ## Architecture (target)
 
@@ -190,6 +190,34 @@ Every push to `main` and all PRs trigger automated checks:
 Both deployments are independent of CI status — they proceed on any push to `main`, so fix CI issues via a follow-up commit if needed.
 
 **Recommended**: Add [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-pull-requests/managing-rulesets/about-rulesets) in your GitHub repo settings to require CI to pass and disable force-push to `main`.
+
+### Availability & recovery
+
+**Graceful shutdown** (`src/index.js`):
+- Handles `SIGTERM` and `SIGINT` signals (sent by orchestrators during rolling deploys)
+- Stops accepting new connections, drains in-flight requests up to 30 seconds
+- Then exits cleanly — existing connections finish before process exits
+- Allows blue-green or rolling deployments without dropping traffic
+
+**Health probes** (`src/app.js`):
+- `GET /health` — Liveness probe: is the process alive? Returns 200 + uptime immediately.
+- `GET /ready` — Readiness probe: is the service ready for traffic? Checks database and Redis with 1-second timeout per check. Returns 200 if ready, 503 if any dependency down.
+
+Render and other orchestrators use these to:
+- Detect crashes (liveness)
+- Route traffic only to healthy instances (readiness)
+- Coordinate graceful shutdowns during deploys
+
+**Database backups** (Neon):
+- Neon automatically backs up your PostgreSQL database daily
+- Access backups via the [Neon console](https://console.neon.tech) → your project → Backups
+- Free tier includes 7-day retention; paid plans offer longer retention
+- To restore: create a new branch from a backup, test it, then restore to main branch
+- Recommended: snapshot before migrations or large changes
+
+**Sentry integration**:
+- Uncaught exceptions and unhandled rejections are automatically reported to Sentry
+- Graceful shutdown logs to Sentry (via logger.info) so you can track deployments
 
 ## API
 
