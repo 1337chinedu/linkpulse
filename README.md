@@ -17,7 +17,7 @@ This is a learning project, built layer by layer to deliberately practice the pi
 
 | Layer | What's implemented | Status |
 |---|---|---|
-| Frontend foundation | React + Vite dashboard | ✅ Done |
+| Frontend foundation | React + Vite (landing, about, contact, dashboard, settings) | ✅ Done |
 | API & backend logic | Node.js + Express REST API | 🚧 In progress |
 | Database & storage | PostgreSQL (Neon), schema + migrations | 🚧 In progress |
 | Auth & permissions | JWT auth, per-user API keys, Postgres Row-Level Security | 🚧 In progress |
@@ -129,7 +129,17 @@ cp .env.example .env   # VITE_API_URL defaults to http://localhost:4000
 npm install
 npm run dev
 ```
-The dashboard runs at `http://localhost:5173`. It expects a running backend (see above) — register an account, create a link, and it shows up in the table with a live click count.
+The frontend runs at `http://localhost:5173`. It includes:
+
+- **Landing page** (`/`) — hero section, features, and sign-up CTA
+- **About page** (`/about`) — project mission, tech stack
+- **Contact page** (`/contact`) — contact form (via Formspree)
+- **Login & Register** (`/login`, `/register`) — public auth pages
+- **Dashboard** (`/dashboard`) — protected; create links, view analytics and copy short URLs
+- **Settings** (`/settings`) — protected; manage API keys (create, view, revoke)
+- **Navigation bar** — consistent site navigation with auth state awareness
+
+The dashboard expects a running backend (see above) — register an account, create a link, and it shows up in the table with a live click count.
 
 ### Deploying the frontend (Vercel)
 **Live**: https://linkpulse-mocha.vercel.app
