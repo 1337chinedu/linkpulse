@@ -50,13 +50,13 @@ export function SettingsPage() {
 
   async function handleCreateKey(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!token) return;
+    if (!token || !keyName.trim()) return;
     setError(null);
     setSuccess(null);
     setCreatingKey(true);
 
     try {
-      const newKey = await api.createApiKey(token);
+      const newKey = await api.createApiKey(token, keyName.trim());
       setKeys((prev) => [newKey, ...prev]);
       setSuccess("API key created successfully");
       setKeyName("");

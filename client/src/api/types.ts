@@ -20,6 +20,7 @@ export interface Link {
 
 export interface ApiKey {
   id: string;
+  name: string;
   createdAt: string;
   secret?: string;
 }
