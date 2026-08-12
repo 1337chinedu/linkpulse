@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Navigation } from "../components/Navigation";
 import { ApiError } from "../api/client";
+import { Mail, Lock, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import "./AuthPages.css";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -29,35 +32,68 @@ export function LoginPage() {
   return (
     <>
       <Navigation />
-      <div className="auth-card">
-        <h1>Log in</h1>
-        <form onSubmit={handleSubmit}>
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
-          {error && <p className="error-message">{error}</p>}
-          <button type="submit" disabled={submitting}>
-            {submitting ? "Logging in…" : "Log in"}
-          </button>
-        </form>
-        <p>
-          Don't have an account? <Link to="/register">Register</Link>
-        </p>
+      <div className="auth-page">
+        <motion.div
+          className="auth-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="auth-header">
+            <h1>Welcome back</h1>
+            <p>Sign in to your account to continue</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-group">
+              <label htmlFor="email">
+                <Mail size={18} />
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={submitting}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">
+                <Lock size={18} />
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={submitting}
+              />
+            </div>
+
+            {error && <div className="error-alert">{error}</div>}
+
+            <button type="submit" className="btn-primary btn-large" disabled={submitting}>
+              {submitting ? "Signing in..." : "Sign in"}
+              <ArrowRight size={20} />
+            </button>
+          </form>
+
+          <div className="auth-footer">
+            <p>
+              Don't have an account?{" "}
+              <Link to="/register" className="auth-link">
+                Create one
+              </Link>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </>
   );
